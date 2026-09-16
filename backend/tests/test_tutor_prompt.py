@@ -50,3 +50,4 @@ def test_prompt_includes_correction_and_switching_rules():
 
     assert "Correct at most one important mistake per turn" in prompt
     assert "Do not switch based on accent" in prompt
+    assert "If the student makes a mistake while practicing Dutch" in prompt
