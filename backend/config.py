@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -13,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    openai_api_key: str = ""
+    openai_api_key: SecretStr = SecretStr("")
     openai_realtime_model: str = "gpt-realtime-2.1-mini"
     openai_realtime_voice: str = "marin"
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
 
     @property
     def openai_configured(self) -> bool:
-        return bool(self.openai_api_key.strip())
+        return bool(self.openai_api_key.get_secret_value().strip())
 
 
 settings = Settings()
