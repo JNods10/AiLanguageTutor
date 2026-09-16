@@ -8,6 +8,7 @@ LANGUAGE_NAMES: dict[str, str] = {
     "es": "Spanish",
     "it": "Italian",
     "pt": "Portuguese",
+    "ja": "Japanese",
 }
 
 LEVEL_GUIDANCE: dict[LanguageLevel, str] = {

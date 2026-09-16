@@ -19,8 +19,12 @@ def test_custom_languages():
     assert "Dutch" not in prompt
 
 
+def test_japanese_language_name():
+    assert language_name("ja") == "Japanese"
+
+
 def test_unknown_language_code_falls_back_to_uppercase():
-    assert language_name("ja") == "JA"
+    assert language_name("ko") == "KO"
 
 
 def test_scenario_is_included_when_set():
