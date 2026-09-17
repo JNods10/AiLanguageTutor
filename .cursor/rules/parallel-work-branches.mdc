@@ -1,0 +1,54 @@
+---
+description: Monorepo dev workflow — separate branches or worktrees for parallel frontend/backend work
+alwaysApply: true
+---
+
+# Monorepo development — frontend & backend
+
+**Stay with one repo** (`frontend/` + `backend/` + root docs). Do not split into separate repos.
+
+Never commit feature work directly on `main`. Scope every change to the correct area on its own branch.
+
+## Option A — Feature branch (single checkout)
+
+```bash
+git fetch origin
+git checkout main && git pull origin main
+git checkout -b feat/your-feature-name
+```
+
+Switch branches when changing focus. One feature per branch; one focused PR per branch.
+
+## Option B — Git worktree (parallel frontend + backend)
+
+Use when backend and frontend need to run **at the same time** in separate folders:
+
+```bash
+# From main clone
+git fetch origin
+git worktree add ../AiLanguageTutor-frontend feat/your-frontend-branch
+git worktree add ../AiLanguageTutor-backend feat/your-backend-branch
+```
+
+Example:
+
+```bash
+git worktree add ../AiLanguageTutor-frontend feat/ui-mvp
+git worktree add ../AiLanguageTutor-backend feat/openai-realtime-pr3-session-endpoint
+```
+
+Run backend in one folder (`uvicorn main:app --reload --port 8000`) and frontend in the other (`npm run dev`). Both share the same remote and history.
+
+## Agent checklist before editing
+
+1. Confirm current branch/worktree matches the task (frontend vs backend).
+2. If changes are on the wrong branch, stop and move to a dedicated branch or worktree.
+3. Do not mix unrelated frontend and backend changes in one PR.
+4. Rebase or merge latest `main` before opening a PR if `main` has moved.
+
+## Naming conventions
+
+- Frontend UI: `feat/ui-*`
+- Backend API: `feat/openai-realtime-pr*` or `feat/backend-*`
+
+See `docs/dev-workflow.md` for full details.

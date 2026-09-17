@@ -15,6 +15,9 @@ backend/*.py[cod]
 backend/.env
 backend/.env.*
 
+# Docs
+docs/
+
 # Local agent notes (not shared in repo)
 CLAUDE.md
 AGENTS.local.md
