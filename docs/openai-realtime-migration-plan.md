@@ -63,7 +63,7 @@ The backend never streams audio. It holds the API key, builds tutor session conf
 |----|-------|--------|
 | **PR 1** | Backend scaffolding and config | Complete |
 | **PR 2** | Tutor prompt builder (language-agnostic) | Complete |
-| **PR 3** | Realtime session minting endpoint | Pending |
+| **PR 3** | Realtime session minting endpoint | Complete |
 | **PR 4** | Backend hardening and docs | Pending |
 | **PR 5** | Frontend: replace ElevenLabs with OpenAI WebRTC | Pending |
 | **PR 6** | Frontend: transcripts and tutor UX | Pending |
