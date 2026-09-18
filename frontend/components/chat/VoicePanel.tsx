@@ -1,25 +1,69 @@
 "use client";
 
 import { useLanguage } from "@/lib/context/LanguageContext";
+import { useRealtimeVoice } from "@/lib/hooks/useRealtimeVoice";
 import Button from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { MicIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils/cn";
 
 const WAVEFORM_BARS = 24;
 
+function statusLabel(status: string) {
+  switch (status) {
+    case "connecting":
+      return "Connecting…";
+    case "connected":
+      return "Connected";
+    case "error":
+      return "Error";
+    default:
+      return "Not connected";
+  }
+}
+
 export default function VoicePanel() {
   const { language } = useLanguage();
+  const { status, error, connect, disconnect, isConnected, isConnecting } =
+    useRealtimeVoice({
+      targetLanguage: language.code,
+      explanationLanguage: "en",
+      level: "beginner",
+    });
+
+  async function handleMicClick() {
+    if (isConnected) {
+      disconnect();
+      return;
+    }
+
+    await connect();
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <div className="flex w-full max-w-md flex-col items-center gap-8 text-center">
-        <Badge>Not connected</Badge>
+        <Badge
+          className={cn(
+            isConnected && "bg-foreground text-background",
+            status === "error" && "text-foreground",
+          )}
+        >
+          {statusLabel(status)}
+        </Badge>
 
         <button
           type="button"
-          disabled
-          aria-label="Start voice session"
-          className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-border bg-surface text-text-muted opacity-60"
+          onClick={handleMicClick}
+          disabled={isConnecting}
+          aria-label={isConnected ? "End voice session" : "Start voice session"}
+          className={cn(
+            "flex h-24 w-24 items-center justify-center rounded-full border-2 transition-colors",
+            isConnected
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-surface text-text-muted hover:border-foreground hover:text-foreground",
+            isConnecting && "opacity-60",
+          )}
         >
           <MicIcon size={32} strokeWidth={1.5} />
         </button>
@@ -31,7 +75,12 @@ export default function VoicePanel() {
           {Array.from({ length: WAVEFORM_BARS }).map((_, i) => (
             <div
               key={i}
-              className="w-1 rounded-full bg-border"
+              className={cn(
+                "w-1 rounded-full transition-colors",
+                isConnected
+                  ? "animate-pulse bg-foreground/70"
+                  : "bg-border",
+              )}
               style={{ height: `${8 + (i % 5) * 6}px` }}
             />
           ))}
@@ -40,15 +89,32 @@ export default function VoicePanel() {
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-medium">Voice practice</h2>
           <p className="text-sm leading-relaxed text-text-muted">
-            Speak naturally in {language.name} with your AI tutor. Voice
-            sessions require a backend connection and will be available once
-            the realtime API is wired up.
+            {isConnected
+              ? `Speak naturally in ${language.name}. Your tutor will respond with corrections and follow-up questions.`
+              : `Start a live voice session in ${language.name}. Explanations are provided in English.`}
           </p>
         </div>
 
-        <Button variant="secondary" size="lg" disabled>
-          Connect (coming soon)
-        </Button>
+        {!isConnected ? (
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={connect}
+            disabled={isConnecting}
+          >
+            {isConnecting ? "Connecting…" : "Start talking"}
+          </Button>
+        ) : (
+          <Button variant="secondary" size="lg" onClick={disconnect}>
+            End conversation
+          </Button>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
