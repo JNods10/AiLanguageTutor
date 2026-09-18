@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     openai_api_key: SecretStr = SecretStr("")
     openai_realtime_model: str = "gpt-realtime-2.1-mini"
+    # Override via OPENAI_REALTIME_VOICE in .env if Dutch/pronunciation sounds off.
     openai_realtime_voice: str = "marin"
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 

@@ -17,10 +17,11 @@ async def create_session(request: CreateSessionRequest) -> CreateSessionResponse
             detail="OpenAI API key is not configured.",
         )
 
-    instructions = build_tutor_instructions(request.to_tutor_params())
+    tutor_params = request.to_tutor_params()
+    instructions = build_tutor_instructions(tutor_params)
 
     try:
-        data = await create_realtime_client_secret(instructions)
+        data = await create_realtime_client_secret(instructions, tutor_params)
     except httpx.HTTPStatusError as exc:
         raise _map_openai_error(exc) from exc
     except httpx.RequestError as exc:
