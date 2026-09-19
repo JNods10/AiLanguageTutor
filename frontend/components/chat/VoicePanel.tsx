@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/lib/context/LanguageContext";
+import { useLevel } from "@/lib/context/LevelContext";
 import { useRealtimeVoice } from "@/lib/hooks/useRealtimeVoice";
 import Button from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -24,11 +25,12 @@ function statusLabel(status: string) {
 
 export default function VoicePanel() {
   const { language } = useLanguage();
+  const { level, levelInfo } = useLevel();
   const { status, error, connect, disconnect, isConnected, isConnecting } =
     useRealtimeVoice({
       targetLanguage: language.code,
       explanationLanguage: "en",
-      level: "beginner",
+      level,
     });
 
   async function handleMicClick() {
@@ -92,7 +94,14 @@ export default function VoicePanel() {
             {isConnected
               ? `English tutoring with native ${language.name} phrases via ElevenLabs when the tutor models language.`
               : `Start a live voice session in ${language.name}. Explanations are in English; modeled phrases use native TTS when configured.`}
+              ? `Speak naturally in ${language.name}. Your tutor will respond with corrections and follow-up questions.`
+              : `${levelInfo.summary}. Start a live voice session in ${language.name}.`}
           </p>
+          {isConnected && (
+            <p className="text-xs text-text-muted">
+              End the session to change practice level in the sidebar.
+            </p>
+          )}
         </div>
 
         {!isConnected ? (

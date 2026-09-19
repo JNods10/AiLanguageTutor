@@ -34,6 +34,9 @@ async def create_session(request: CreateSessionRequest) -> CreateSessionResponse
             instructions,
             native_practice_tts=native_practice_tts,
         )
+
+    try:
+        data = await create_realtime_client_secret(instructions, tutor_params)
     except httpx.HTTPStatusError as exc:
         raise _map_openai_error(exc) from exc
     except httpx.RequestError as exc:

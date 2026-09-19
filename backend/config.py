@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     openai_api_key: SecretStr = SecretStr("")
     openai_realtime_model: str = "gpt-realtime-2.1-mini"
+    # Override via OPENAI_REALTIME_VOICE in .env if Dutch/pronunciation sounds off.
     openai_realtime_voice: str = "marin"
     elevenlabs_api_key: SecretStr = SecretStr("")
     elevenlabs_voice_id: str = ""
