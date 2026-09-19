@@ -9,7 +9,15 @@ import {
   createRealtimeSession,
   type RealtimeConnection,
 } from "@/lib/realtime/connect";
+import type { ConversationMode } from "@/lib/realtime/dataChannel";
+import { resetTurnDiagnostics } from "@/lib/realtime/turnDiagnostics";
 import type { LanguageLevel, VoiceConnectionStatus } from "@/lib/realtime/types";
+
+const CONVERSATION_MODE_LABELS: Record<ConversationMode, string> = {
+  free_chat: "Free chat",
+  structured_lesson: "Structured lesson",
+  explain_focus: "English explanations",
+};
 
 type UseRealtimeVoiceOptions = {
   targetLanguage: string;
@@ -34,11 +42,19 @@ export function useRealtimeVoice({
     STORAGE_KEYS.voiceShowDutchCaptions,
     true,
   );
+  const [conversationMode, setConversationMode] =
+    useState<ConversationMode | null>(null);
+  const [conversationModeNote, setConversationModeNote] = useState<string | null>(
+    null,
+  );
   const connectionRef = useRef<RealtimeConnection | null>(null);
 
   const resetPracticePhrases = useCallback(() => {
     setActivePracticePhrase(null);
     setPracticePhraseHistory([]);
+    setConversationMode(null);
+    setConversationModeNote(null);
+    resetTurnDiagnostics();
   }, []);
 
   const disconnect = useCallback(() => {
@@ -76,6 +92,10 @@ export function useRealtimeVoice({
             }
             return [...prev, phrase];
           });
+        },
+        onConversationModeChange: (mode, note) => {
+          setConversationMode(mode);
+          setConversationModeNote(note ?? null);
         },
       });
       connectionRef.current = connection;
@@ -132,5 +152,10 @@ export function useRealtimeVoice({
     practicePhraseHistory,
     showDutchCaptions,
     setShowDutchCaptions,
+    conversationMode,
+    conversationModeLabel: conversationMode
+      ? CONVERSATION_MODE_LABELS[conversationMode]
+      : null,
+    conversationModeNote,
   };
 }
