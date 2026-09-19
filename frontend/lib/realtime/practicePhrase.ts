@@ -1,5 +1,9 @@
 import { apiConfig } from "@/lib/config";
 
+export function normalizePracticePhrase(text: string): string {
+  return text.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 async function readErrorMessage(response: Response): Promise<string> {
   try {
     const data = (await response.json()) as { detail?: unknown };
@@ -26,23 +30,17 @@ export async function fetchPracticePhraseAudio(text: string): Promise<Blob> {
   return response.blob();
 }
 
-let activeClip: HTMLAudioElement | null = null;
+const inFlightByPhrase = new Map<string, Promise<void>>();
 
-export async function playPracticePhrase(
+async function playPracticePhraseOnce(
   phrase: string,
   tutorAudio: HTMLAudioElement,
 ): Promise<void> {
-  if (activeClip) {
-    activeClip.pause();
-    activeClip = null;
-  }
-
   tutorAudio.volume = 0;
 
   const blob = await fetchPracticePhraseAudio(phrase);
   const url = URL.createObjectURL(blob);
   const clip = new Audio(url);
-  activeClip = clip;
 
   try {
     await clip.play();
@@ -51,9 +49,26 @@ export async function playPracticePhrase(
       clip.onerror = () => reject(new Error("Could not play practice phrase audio."));
     });
   } finally {
-    if (activeClip === clip) {
-      activeClip = null;
-    }
     URL.revokeObjectURL(url);
   }
+}
+
+export async function playPracticePhrase(
+  phrase: string,
+  tutorAudio: HTMLAudioElement,
+): Promise<void> {
+  const key = normalizePracticePhrase(phrase);
+  const existing = inFlightByPhrase.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const playback = playPracticePhraseOnce(phrase, tutorAudio).finally(() => {
+    if (inFlightByPhrase.get(key) === playback) {
+      inFlightByPhrase.delete(key);
+    }
+  });
+
+  inFlightByPhrase.set(key, playback);
+  return playback;
 }

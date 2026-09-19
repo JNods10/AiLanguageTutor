@@ -75,8 +75,15 @@ export async function connectRealtimeVoice(
   const peerConnection = new RTCPeerConnection();
   const audioElement = document.createElement("audio");
   audioElement.autoplay = true;
+  audioElement.setAttribute("playsinline", "true");
+  document.body.appendChild(audioElement);
+
+  const remoteAudio: { track: MediaStreamTrack | null } = { track: null };
 
   peerConnection.ontrack = (event) => {
+    if (event.track.kind === "audio") {
+      remoteAudio.track = event.track;
+    }
     const [stream] = event.streams;
     if (stream) {
       audioElement.srcObject = stream;
@@ -127,6 +134,7 @@ export async function connectRealtimeVoice(
       onPracticePhraseStart: options.onPracticePhraseStart,
       onPracticePhraseEnd: options.onPracticePhraseEnd,
     },
+    remoteAudio,
   );
 
   return {
@@ -140,6 +148,7 @@ export async function connectRealtimeVoice(
       mediaStream.getTracks().forEach((track) => track.stop());
       peerConnection.close();
       audioElement.srcObject = null;
+      audioElement.remove();
     },
   };
 }

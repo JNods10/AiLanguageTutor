@@ -1,9 +1,11 @@
-import { playPracticePhrase } from "./practicePhrase";
+import { normalizePracticePhrase, playPracticePhrase } from "./practicePhrase";
 
 const SPEAK_PRACTICE_PHRASE = "speak_practice_phrase";
 
-/** Ignore back-to-back TTS for the same text (duplicate events or twin tool calls). */
-const PHRASE_DEDUPE_MS = 5_000;
+/** Ignore back-to-back TTS for the same text (duplicate tool calls). */
+const PHRASE_DEDUPE_MS = 8_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type RealtimeEvent = {
   type?: string;
@@ -16,19 +18,7 @@ type RealtimeEvent = {
     name?: string;
     call_id?: string;
   };
-  response?: {
-    output?: Array<{
-      type?: string;
-      name?: string;
-      call_id?: string;
-      arguments?: string;
-    }>;
-  };
 };
-
-function normalizePhrase(text: string): string {
-  return text.trim().replace(/\s+/g, " ").toLowerCase();
-}
 
 function sendEvent(dataChannel: RTCDataChannel, event: object) {
   if (dataChannel.readyState !== "open") {
@@ -58,30 +48,40 @@ type PracticePhraseHandlers = {
   onPracticePhraseEnd?: (phrase: string) => void;
 };
 
-type TutorMuteState = {
+type RemoteAudioRef = { track: MediaStreamTrack | null };
+
+type StreamSuppressState = {
   savedVolume: number;
-  depth: number;
+  suppressing: boolean;
+  remoteAudio: RemoteAudioRef;
 };
 
-function ensureTutorMuted(
+function suppressOpenAiStream(
   tutorAudio: HTMLAudioElement,
-  muteState: TutorMuteState,
+  state: StreamSuppressState,
 ): void {
-  if (muteState.depth === 0) {
-    muteState.savedVolume = tutorAudio.volume;
-    tutorAudio.volume = 0;
+  if (!state.suppressing) {
+    state.savedVolume = tutorAudio.volume;
+    state.suppressing = true;
   }
-  muteState.depth += 1;
+  tutorAudio.volume = 0;
+  if (state.remoteAudio.track) {
+    state.remoteAudio.track.enabled = false;
+  }
 }
 
-function releaseTutorMute(
+function restoreOpenAiStream(
   tutorAudio: HTMLAudioElement,
-  muteState: TutorMuteState,
+  state: StreamSuppressState,
 ): void {
-  muteState.depth = Math.max(0, muteState.depth - 1);
-  if (muteState.depth === 0) {
-    tutorAudio.volume = muteState.savedVolume;
+  if (!state.suppressing) {
+    return;
   }
+  if (state.remoteAudio.track) {
+    state.remoteAudio.track.enabled = true;
+  }
+  tutorAudio.volume = state.savedVolume;
+  state.suppressing = false;
 }
 
 function isNativePhraseToolEvent(event: RealtimeEvent): boolean {
@@ -102,7 +102,7 @@ function isNativePhraseToolEvent(event: RealtimeEvent): boolean {
 async function handleFunctionCall(
   dataChannel: RTCDataChannel,
   tutorAudio: HTMLAudioElement,
-  muteState: TutorMuteState,
+  streamState: StreamSuppressState,
   name: string,
   callId: string,
   itemId: string | undefined,
@@ -113,6 +113,7 @@ async function handleFunctionCall(
   phraseHandlers: PracticePhraseHandlers,
   lastPlayedPhrase: { text: string; at: number } | null,
   rememberPlayedPhrase: (entry: { text: string; at: number }) => void,
+  phraseInFlight: { text: string | null },
 ) {
   if (handledCallIds.has(callId)) {
     return;
@@ -155,8 +156,14 @@ async function handleFunctionCall(
     return;
   }
 
-  const normalized = normalizePhrase(phrase);
+  const normalized = normalizePracticePhrase(phrase);
   const now = Date.now();
+
+  if (phraseInFlight.text === normalized) {
+    submitToolOutput(dataChannel, callId, { ok: true, played: phrase, deduped: true });
+    return;
+  }
+
   if (
     lastPlayedPhrase &&
     lastPlayedPhrase.text === normalized &&
@@ -166,14 +173,17 @@ async function handleFunctionCall(
     return;
   }
 
-  ensureTutorMuted(tutorAudio, muteState);
+  suppressOpenAiStream(tutorAudio, streamState);
+  phraseInFlight.text = normalized;
+  rememberPlayedPhrase({ text: normalized, at: now });
 
   try {
     phraseHandlers.onPracticePhraseStart?.(phrase);
     await playPracticePhrase(phrase, tutorAudio);
-    rememberPlayedPhrase({ text: normalized, at: Date.now() });
     phraseHandlers.onPracticePhraseEnd?.(phrase);
     submitToolOutput(dataChannel, callId, { ok: true, played: phrase });
+    // Keep OpenAI muted briefly so follow-up response audio does not overlap the clip.
+    await sleep(400);
   } catch (err) {
     phraseHandlers.onPracticePhraseEnd?.(phrase);
     const message =
@@ -181,7 +191,8 @@ async function handleFunctionCall(
     onError(message);
     submitToolOutput(dataChannel, callId, { ok: false, error: message });
   } finally {
-    releaseTutorMute(tutorAudio, muteState);
+    phraseInFlight.text = null;
+    restoreOpenAiStream(tutorAudio, streamState);
   }
 }
 
@@ -209,10 +220,16 @@ export function attachRealtimeDataChannelHandler(
   tutorAudio: HTMLAudioElement,
   onError: (message: string) => void,
   phraseHandlers: PracticePhraseHandlers = {},
+  remoteAudio: RemoteAudioRef = { track: null },
 ): () => void {
   const handledCallIds = new Set<string>();
   const handledItemIds = new Set<string>();
-  const muteState: TutorMuteState = { savedVolume: 1, depth: 0 };
+  const streamState: StreamSuppressState = {
+    savedVolume: 1,
+    suppressing: false,
+    remoteAudio,
+  };
+  const phraseInFlight = { text: null as string | null };
   let lastPlayedPhrase: { text: string; at: number } | null = null;
   let phrasePlaybackChain: Promise<void> = Promise.resolve();
 
@@ -220,14 +237,16 @@ export function attachRealtimeDataChannelHandler(
     try {
       const event = JSON.parse(String(messageEvent.data)) as RealtimeEvent;
 
-      // Mute OpenAI stream as soon as a native phrase tool call starts (parallel audio
-      // on the same response was causing "double Dutch" with ElevenLabs).
       if (
         (event.type === "response.function_call_arguments.delta" ||
           event.type === "response.output_item.added") &&
         isNativePhraseToolEvent(event)
       ) {
-        ensureTutorMuted(tutorAudio, muteState);
+        suppressOpenAiStream(tutorAudio, streamState);
+      }
+
+      if (event.type === "response.done" && phraseInFlight.text === null) {
+        restoreOpenAiStream(tutorAudio, streamState);
       }
 
       const calls = extractFunctionCalls(event);
@@ -237,7 +256,7 @@ export function attachRealtimeDataChannelHandler(
           handleFunctionCall(
             dataChannel,
             tutorAudio,
-            muteState,
+            streamState,
             call.name,
             call.callId,
             call.itemId,
@@ -250,6 +269,7 @@ export function attachRealtimeDataChannelHandler(
             (entry) => {
               lastPlayedPhrase = entry;
             },
+            phraseInFlight,
           ),
         );
       }
@@ -262,7 +282,6 @@ export function attachRealtimeDataChannelHandler(
 
   return () => {
     dataChannel.removeEventListener("message", onMessage);
-    muteState.depth = 0;
-    tutorAudio.volume = muteState.savedVolume;
+    restoreOpenAiStream(tutorAudio, streamState);
   };
 }

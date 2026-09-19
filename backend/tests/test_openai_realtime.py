@@ -17,7 +17,10 @@ def test_build_session_config_includes_model_voice_and_vad():
     assert config["model"] == settings.openai_realtime_model
     assert config["instructions"] == "You are a tutor."
     assert config["output_modalities"] == ["audio"]
-    assert config["audio"]["input"]["turn_detection"] == {"type": "semantic_vad"}
+    assert config["audio"]["input"]["turn_detection"] == {
+        "type": "semantic_vad",
+        "eagerness": "low",
+    }
     assert config["audio"]["output"]["voice"] == settings.openai_realtime_voice
 
 

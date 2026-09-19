@@ -30,7 +30,11 @@ def build_session_config(
         "output_modalities": ["audio"],
         "audio": {
             "input": {
-                "turn_detection": {"type": "semantic_vad"},
+                "turn_detection": {
+                    "type": "semantic_vad",
+                    # "low" waits longer before the model replies (up to ~8s vs ~4s for default).
+                    "eagerness": "low",
+                },
                 "transcription": {
                     "model": "gpt-live-transcribe",
                     "language": language,
