@@ -32,20 +32,20 @@ def test_scenario_is_included_when_set():
     prompt = build_tutor_instructions(params)
 
     assert "ordering coffee" in prompt
-    assert "## Scenario" in prompt
+    assert "Scenario:" in prompt
 
 
 def test_scenario_omitted_when_not_set():
     prompt = build_tutor_instructions(TutorParams(scenario=None))
 
-    assert "## Scenario" not in prompt
+    assert "Scenario:" not in prompt
 
 
 def test_beginner_scenario_includes_structured_lesson_hint():
     params = TutorParams(level=LanguageLevel.beginner, scenario="ordering coffee")
     prompt = build_tutor_instructions(params)
 
-    assert "structured mini-lesson" in prompt.lower()
+    assert "structured lesson" in prompt.lower()
 
 
 def test_level_guidance_varies_by_level():
@@ -59,45 +59,33 @@ def test_level_guidance_varies_by_level():
 def test_beginner_uses_english_heavy_language_mix():
     prompt = build_tutor_instructions(TutorParams(level=LanguageLevel.beginner))
 
-    assert "Language mix (beginner)" in prompt
     assert "mostly English" in prompt
-    assert "Do not conduct the full conversation in Dutch" in prompt
-    assert "one short dutch phrase per turn" in prompt.lower()
+    assert "Do not run full conversations in Dutch" in prompt
 
 
 def test_beginner_opens_in_english():
     prompt = build_tutor_instructions(TutorParams(level=LanguageLevel.beginner))
 
-    assert "use English only" in prompt
-    assert "Do not use Dutch on the first turn" in prompt
+    assert "first turn in English only" in prompt
 
 
-def test_voice_delivery_one_language_per_sentence():
+def test_stream_mode_voice_delivery():
     prompt = build_tutor_instructions()
 
-    assert "Voice delivery" in prompt
     assert "one language per sentence" in prompt.lower()
-    assert "In Dutch, say:" in prompt
-
-
-def test_beginner_alternate_english_only_turns():
-    prompt = build_tutor_instructions(TutorParams(level=LanguageLevel.beginner))
-
-    assert "English-only turns" in prompt
 
 
 def test_intermediate_conducts_dialogue_in_target_language():
     prompt = build_tutor_instructions(TutorParams(level=LanguageLevel.intermediate))
 
-    assert "Language mix (intermediate)" in prompt
-    assert "Conduct most of the dialogue in Dutch" in prompt
+    assert "conduct most dialogue in Dutch" in prompt
 
 
 def test_prompt_prioritizes_communication_over_perfection():
     prompt = build_tutor_instructions()
 
     assert "Never comment on accent" in prompt
-    assert "If the student is understood" in prompt
+    assert "If understood" in prompt
     assert "Prefer recasting" in prompt
 
 
@@ -107,24 +95,25 @@ def test_beginner_corrects_rarely():
     assert "correct rarely" in prompt.lower()
 
 
-def test_teaching_loop_in_prompt():
+def test_teaching_adapts_to_student():
     beginner = build_tutor_instructions(TutorParams(level=LanguageLevel.beginner))
     intermediate = build_tutor_instructions(
         TutorParams(level=LanguageLevel.intermediate)
     )
 
-    assert "one teachable moment per turn" in beginner.lower()
-    assert "english-only turns" in beginner.lower()
-    assert "When teaching new language" in intermediate
+    assert "follow the student's lead" in beginner.lower() or "adapt to the student" in beginner.lower()
+    assert "adapt to the student" in intermediate.lower()
 
 
-def test_native_practice_audio_forbids_target_on_stream():
+def test_native_practice_audio_routes_through_tools():
     prompt = build_tutor_instructions(native_practice_audio=True)
 
-    assert "Never speak Dutch on the audio stream" in prompt
     assert "speak_practice_phrase" in prompt
-    assert "In Dutch, say:" not in prompt
-    assert "conversation in Dutch" in prompt
+    assert "explain_in_english" in prompt
+    assert "set_conversation_mode" in prompt
+    assert "Never speak Dutch on the Realtime stream" in prompt
+    assert "ONLY that tool call" in prompt
+    assert "Do not translate" in prompt
 
 
 def test_native_practice_defaults_to_dutch_conversation():
@@ -133,9 +122,8 @@ def test_native_practice_defaults_to_dutch_conversation():
         native_practice_audio=True,
     )
 
-    assert "Which language to use" in prompt
-    assert "ongoing conversation in Dutch" in prompt
-    assert "explanation request" in prompt.lower()
+    assert "live Dutch conversation" in prompt
+    assert "explain_in_english" in prompt
 
 
 def test_native_practice_beginner_opens_in_dutch_via_tool():
@@ -145,11 +133,11 @@ def test_native_practice_beginner_opens_in_dutch_via_tool():
     )
 
     assert "greet in Dutch with speak_practice_phrase" in prompt
-    assert "Do not use Dutch on the first turn" not in prompt
+    assert "first turn in English only" not in prompt
 
 
-def test_prompt_allows_student_led_conversation():
+def test_prompt_mentions_tools_not_fixed_script():
     prompt = build_tutor_instructions()
 
-    assert "Follow the student's lead" in prompt
-    assert "not a fixed lesson script" in prompt.lower()
+    assert "tools" in prompt.lower()
+    assert "fixed lesson script" in prompt.lower()

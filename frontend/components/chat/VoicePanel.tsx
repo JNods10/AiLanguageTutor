@@ -38,6 +38,8 @@ export default function VoicePanel() {
     practicePhraseHistory,
     showDutchCaptions,
     setShowDutchCaptions,
+    conversationModeLabel,
+    conversationModeNote,
   } = useRealtimeVoice({
     targetLanguage: language.code,
     explanationLanguage: "en",
@@ -98,6 +100,13 @@ export default function VoicePanel() {
             />
           ))}
         </div>
+
+        {isConnected && conversationModeLabel && (
+          <p className="text-xs text-text-muted">
+            Mode: {conversationModeLabel}
+            {conversationModeNote ? ` — ${conversationModeNote}` : ""}
+          </p>
+        )}
 
         {isConnected && (
           <>

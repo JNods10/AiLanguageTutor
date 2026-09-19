@@ -1,0 +1,17 @@
+---
+description: Never implement feature work on main; branch first
+alwaysApply: true
+---
+
+# Git — feature branches required
+
+Before creating or editing any project files (code, tests, docs for a feature):
+
+1. Run `git branch --show-current`.
+2. If the branch is `main` (or `master`), create and switch to a feature branch **before** making changes:
+   `git checkout -b feat/short-descriptive-name`
+3. Do not commit feature work on `main`.
+
+If you discover work was started on `main` with uncommitted changes only, run `git checkout -b feat/...` immediately (changes carry over). If commits already exist on `main` locally, move them with cherry-pick or a new branch from before those commits—never force-push `main`.
+
+See [CLAUDE.md](CLAUDE.md) and [docs/dev-workflow.md](docs/dev-workflow.md).

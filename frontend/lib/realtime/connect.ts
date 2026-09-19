@@ -1,6 +1,9 @@
 import { apiConfig } from "@/lib/config";
 
-import { attachRealtimeDataChannelHandler } from "./dataChannel";
+import {
+  attachRealtimeDataChannelHandler,
+  type ConversationMode,
+} from "./dataChannel";
 import type { CreateSessionResponse, SessionParams } from "./types";
 
 const OPENAI_REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
@@ -66,6 +69,7 @@ type ConnectOptions = {
   onToolError?: (message: string) => void;
   onPracticePhraseStart?: (phrase: string) => void;
   onPracticePhraseEnd?: (phrase: string) => void;
+  onConversationModeChange?: (mode: ConversationMode, note?: string) => void;
 };
 
 export async function connectRealtimeVoice(
@@ -133,6 +137,7 @@ export async function connectRealtimeVoice(
     {
       onPracticePhraseStart: options.onPracticePhraseStart,
       onPracticePhraseEnd: options.onPracticePhraseEnd,
+      onConversationModeChange: options.onConversationModeChange,
     },
     remoteAudio,
   );

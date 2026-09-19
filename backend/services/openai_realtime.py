@@ -2,7 +2,7 @@ import httpx
 
 from config import settings
 from schemas.tutor import LanguageLevel, TutorParams
-from services.realtime_tools import SPEAK_PRACTICE_PHRASE_TOOL
+from services.realtime_tools import REALTIME_TUTOR_TOOLS
 
 OPENAI_CLIENT_SECRETS_URL = "https://api.openai.com/v1/realtime/client_secrets"
 
@@ -47,7 +47,7 @@ def build_session_config(
     }
 
     if native_practice_tts:
-        config["tools"] = [SPEAK_PRACTICE_PHRASE_TOOL]
+        config["tools"] = REALTIME_TUTOR_TOOLS
         config["tool_choice"] = "auto"
 
     return config
