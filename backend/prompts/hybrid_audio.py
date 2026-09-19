@@ -12,4 +12,5 @@ def append_native_practice_tts_instructions(
 - Single phrases, examples, and whole {practice} turns (1–4 short sentences in one tool call) are all valid. Use multiple tool calls in one turn if you need more {practice} audio.
 - Default voice mode is {practice} conversation via the tool; follow "Which language to use" in the instructions above. Use {explain} on stream only when they ask an explanation question in {explain}.
 - Do not also say aloud on stream any {practice} text you send to the tool.
+- Call `{SPEAK_PRACTICE_PHRASE}` once per distinct utterance. Do not invoke it twice in a row with the same or nearly identical text.
 """

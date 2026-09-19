@@ -2,6 +2,9 @@ import { playPracticePhrase } from "./practicePhrase";
 
 const SPEAK_PRACTICE_PHRASE = "speak_practice_phrase";
 
+/** Ignore back-to-back TTS for the same text (duplicate Realtime events or twin tool calls). */
+const PHRASE_DEDUPE_MS = 3_000;
+
 type RealtimeEvent = {
   type?: string;
   response?: {
@@ -54,6 +57,8 @@ async function handleFunctionCall(
   handledCallIds: Set<string>,
   onError: (message: string) => void,
   phraseHandlers: PracticePhraseHandlers,
+  lastPlayedPhrase: { text: string; at: number } | null,
+  rememberPlayedPhrase: (entry: { text: string; at: number }) => void,
 ) {
   if (handledCallIds.has(callId)) {
     return;
@@ -89,6 +94,16 @@ async function handleFunctionCall(
     return;
   }
 
+  const now = Date.now();
+  if (
+    lastPlayedPhrase &&
+    lastPlayedPhrase.text === phrase &&
+    now - lastPlayedPhrase.at < PHRASE_DEDUPE_MS
+  ) {
+    submitToolOutput(dataChannel, callId, { ok: true, played: phrase, deduped: true });
+    return;
+  }
+
   sendEvent(dataChannel, { type: "response.cancel" });
   const previousVolume = tutorAudio.volume;
   tutorAudio.volume = 0;
@@ -96,6 +111,7 @@ async function handleFunctionCall(
   try {
     phraseHandlers.onPracticePhraseStart?.(phrase);
     await playPracticePhrase(phrase, tutorAudio);
+    rememberPlayedPhrase({ text: phrase, at: Date.now() });
     phraseHandlers.onPracticePhraseEnd?.(phrase);
     submitToolOutput(dataChannel, callId, { ok: true, played: phrase });
   } catch (err) {
@@ -110,37 +126,22 @@ async function handleFunctionCall(
 }
 
 function extractFunctionCalls(event: RealtimeEvent) {
-  const calls: Array<{ name: string; callId: string; arguments: string }> = [];
+  // Handle only arguments.done — response.done carries the same calls and caused double playback.
+  if (event.type !== "response.function_call_arguments.done") {
+    return [];
+  }
 
-  if (event.type === "response.function_call_arguments.done") {
-    if (event.name && event.call_id && event.arguments) {
-      calls.push({
+  if (event.name && event.call_id && event.arguments) {
+    return [
+      {
         name: event.name,
         callId: event.call_id,
         arguments: event.arguments,
-      });
-    }
-    return calls;
+      },
+    ];
   }
 
-  if (event.type === "response.done" && event.response?.output) {
-    for (const item of event.response.output) {
-      if (
-        item.type === "function_call" &&
-        item.name &&
-        item.call_id &&
-        item.arguments
-      ) {
-        calls.push({
-          name: item.name,
-          callId: item.call_id,
-          arguments: item.arguments,
-        });
-      }
-    }
-  }
-
-  return calls;
+  return [];
 }
 
 export function attachRealtimeDataChannelHandler(
@@ -150,6 +151,8 @@ export function attachRealtimeDataChannelHandler(
   phraseHandlers: PracticePhraseHandlers = {},
 ): () => void {
   const handledCallIds = new Set<string>();
+  let lastPlayedPhrase: { text: string; at: number } | null = null;
+  let phrasePlaybackChain: Promise<void> = Promise.resolve();
 
   const onMessage = (messageEvent: MessageEvent) => {
     try {
@@ -157,15 +160,21 @@ export function attachRealtimeDataChannelHandler(
       const calls = extractFunctionCalls(event);
 
       for (const call of calls) {
-        void handleFunctionCall(
-          dataChannel,
-          tutorAudio,
-          call.name,
-          call.callId,
-          call.arguments,
-          handledCallIds,
-          onError,
-          phraseHandlers,
+        phrasePlaybackChain = phrasePlaybackChain.then(() =>
+          handleFunctionCall(
+            dataChannel,
+            tutorAudio,
+            call.name,
+            call.callId,
+            call.arguments,
+            handledCallIds,
+            onError,
+            phraseHandlers,
+            lastPlayedPhrase,
+            (entry) => {
+              lastPlayedPhrase = entry;
+            },
+          ),
         );
       }
     } catch {
