@@ -1,6 +1,7 @@
 "use client";
 
 import { LanguageProvider } from "@/lib/context/LanguageContext";
+import { LevelProvider } from "@/lib/context/LevelContext";
 import { ChatProvider } from "@/lib/context/ChatContext";
 
 export default function AppProviders({
@@ -10,7 +11,9 @@ export default function AppProviders({
 }) {
   return (
     <LanguageProvider>
-      <ChatProvider>{children}</ChatProvider>
+      <LevelProvider>
+        <ChatProvider>{children}</ChatProvider>
+      </LevelProvider>
     </LanguageProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { apiConfig } from "@/lib/config";
 
+import { attachRealtimeDataChannelHandler } from "./dataChannel";
 import type { CreateSessionResponse, SessionParams } from "./types";
 
 const OPENAI_REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
@@ -61,14 +62,28 @@ export type RealtimeConnection = {
   close: () => void;
 };
 
+type ConnectOptions = {
+  onToolError?: (message: string) => void;
+  onPracticePhraseStart?: (phrase: string) => void;
+  onPracticePhraseEnd?: (phrase: string) => void;
+};
+
 export async function connectRealtimeVoice(
   clientSecret: string,
+  options: ConnectOptions = {},
 ): Promise<RealtimeConnection> {
   const peerConnection = new RTCPeerConnection();
   const audioElement = document.createElement("audio");
   audioElement.autoplay = true;
+  audioElement.setAttribute("playsinline", "true");
+  document.body.appendChild(audioElement);
+
+  const remoteAudio: { track: MediaStreamTrack | null } = { track: null };
 
   peerConnection.ontrack = (event) => {
+    if (event.track.kind === "audio") {
+      remoteAudio.track = event.track;
+    }
     const [stream] = event.streams;
     if (stream) {
       audioElement.srcObject = stream;
@@ -111,16 +126,29 @@ export async function connectRealtimeVoice(
     sdp: await sdpResponse.text(),
   });
 
+  const detachDataChannel = attachRealtimeDataChannelHandler(
+    dataChannel,
+    audioElement,
+    (message) => options.onToolError?.(message),
+    {
+      onPracticePhraseStart: options.onPracticePhraseStart,
+      onPracticePhraseEnd: options.onPracticePhraseEnd,
+    },
+    remoteAudio,
+  );
+
   return {
     peerConnection,
     mediaStream,
     audioElement,
     dataChannel,
     close: () => {
+      detachDataChannel();
       dataChannel.close();
       mediaStream.getTracks().forEach((track) => track.stop());
       peerConnection.close();
       audioElement.srcObject = null;
+      audioElement.remove();
     },
   };
 }

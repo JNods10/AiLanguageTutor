@@ -1,11 +1,13 @@
 "use client";
 
 import { useLanguage } from "@/lib/context/LanguageContext";
+import { useLevel } from "@/lib/context/LevelContext";
 import { useRealtimeVoice } from "@/lib/hooks/useRealtimeVoice";
 import Button from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { MicIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
+import DutchPhraseCaptions from "./DutchPhraseCaptions";
 
 const WAVEFORM_BARS = 24;
 
@@ -24,12 +26,23 @@ function statusLabel(status: string) {
 
 export default function VoicePanel() {
   const { language } = useLanguage();
-  const { status, error, connect, disconnect, isConnected, isConnecting } =
-    useRealtimeVoice({
-      targetLanguage: language.code,
-      explanationLanguage: "en",
-      level: "beginner",
-    });
+  const { level, levelInfo } = useLevel();
+  const {
+    status,
+    error,
+    connect,
+    disconnect,
+    isConnected,
+    isConnecting,
+    activePracticePhrase,
+    practicePhraseHistory,
+    showDutchCaptions,
+    setShowDutchCaptions,
+  } = useRealtimeVoice({
+    targetLanguage: language.code,
+    explanationLanguage: "en",
+    level,
+  });
 
   async function handleMicClick() {
     if (isConnected) {
@@ -42,7 +55,7 @@ export default function VoicePanel() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-      <div className="flex w-full max-w-md flex-col items-center gap-8 text-center">
+      <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
         <Badge
           className={cn(
             isConnected && "bg-foreground text-background",
@@ -86,13 +99,41 @@ export default function VoicePanel() {
           ))}
         </div>
 
+        {isConnected && (
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowDutchCaptions(!showDutchCaptions)}
+              aria-pressed={showDutchCaptions}
+            >
+              {showDutchCaptions
+                ? `Hide ${language.name} text`
+                : `Show ${language.name} text`}
+            </Button>
+
+            <DutchPhraseCaptions
+              languageName={language.name}
+              activePhrase={activePracticePhrase}
+              history={practicePhraseHistory}
+              visible={showDutchCaptions}
+            />
+          </>
+        )}
+
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-medium">Voice practice</h2>
           <p className="text-sm leading-relaxed text-text-muted">
             {isConnected
-              ? `Speak naturally in ${language.name}. Your tutor will respond with corrections and follow-up questions.`
-              : `Start a live voice session in ${language.name}. Explanations are provided in English.`}
+              ? `English tutoring with native ${language.name} audio. Toggle captions to read phrases while you listen.`
+              : `${levelInfo.summary}. Start a live voice session in ${language.name}.`}
           </p>
+          {isConnected && (
+            <p className="text-xs text-text-muted">
+              End the session to change practice level in the sidebar.
+            </p>
+          )}
         </div>
 
         {!isConnected ? (

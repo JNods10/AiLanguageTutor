@@ -6,7 +6,8 @@ from pydantic import SecretStr
 
 from config import settings
 from main import app
-from services.openai_realtime import build_session_config
+from schemas.tutor import LanguageLevel, TutorParams
+from services.openai_realtime import build_session_config, transcription_language
 
 
 def test_build_session_config_includes_model_voice_and_vad():
@@ -16,8 +17,46 @@ def test_build_session_config_includes_model_voice_and_vad():
     assert config["model"] == settings.openai_realtime_model
     assert config["instructions"] == "You are a tutor."
     assert config["output_modalities"] == ["audio"]
-    assert config["audio"]["input"]["turn_detection"] == {"type": "semantic_vad"}
+    assert config["audio"]["input"]["turn_detection"] == {
+        "type": "semantic_vad",
+        "eagerness": "low",
+    }
     assert config["audio"]["output"]["voice"] == settings.openai_realtime_voice
+
+
+def test_transcription_language_beginner_uses_explanation_language():
+    params = TutorParams(
+        target_language="nl",
+        explanation_language="en",
+        level=LanguageLevel.beginner,
+    )
+    assert transcription_language(params) == "en"
+
+
+def test_transcription_language_intermediate_uses_target_language():
+    params = TutorParams(
+        target_language="nl",
+        explanation_language="en",
+        level=LanguageLevel.intermediate,
+    )
+    assert transcription_language(params) == "nl"
+
+
+def test_build_session_config_sets_transcription_language():
+    beginner = build_session_config(
+        "Hi",
+        TutorParams(level=LanguageLevel.beginner, explanation_language="en"),
+    )
+    assert beginner["audio"]["input"]["transcription"]["language"] == "en"
+
+    intermediate = build_session_config(
+        "Hi",
+        TutorParams(
+            target_language="nl",
+            level=LanguageLevel.intermediate,
+        ),
+    )
+    assert intermediate["audio"]["input"]["transcription"]["language"] == "nl"
 
 
 @patch("routers.realtime.create_realtime_client_secret", new_callable=AsyncMock)
