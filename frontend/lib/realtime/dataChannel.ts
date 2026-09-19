@@ -40,6 +40,11 @@ function submitToolOutput(
   sendEvent(dataChannel, { type: "response.create" });
 }
 
+type PracticePhraseHandlers = {
+  onPracticePhraseStart?: (phrase: string) => void;
+  onPracticePhraseEnd?: (phrase: string) => void;
+};
+
 async function handleFunctionCall(
   dataChannel: RTCDataChannel,
   tutorAudio: HTMLAudioElement,
@@ -48,6 +53,7 @@ async function handleFunctionCall(
   argsJson: string,
   handledCallIds: Set<string>,
   onError: (message: string) => void,
+  phraseHandlers: PracticePhraseHandlers,
 ) {
   if (handledCallIds.has(callId)) {
     return;
@@ -83,14 +89,23 @@ async function handleFunctionCall(
     return;
   }
 
+  sendEvent(dataChannel, { type: "response.cancel" });
+  const previousVolume = tutorAudio.volume;
+  tutorAudio.volume = 0;
+
   try {
+    phraseHandlers.onPracticePhraseStart?.(phrase);
     await playPracticePhrase(phrase, tutorAudio);
+    phraseHandlers.onPracticePhraseEnd?.(phrase);
     submitToolOutput(dataChannel, callId, { ok: true, played: phrase });
   } catch (err) {
+    phraseHandlers.onPracticePhraseEnd?.(phrase);
     const message =
       err instanceof Error ? err.message : "Practice phrase playback failed.";
     onError(message);
     submitToolOutput(dataChannel, callId, { ok: false, error: message });
+  } finally {
+    tutorAudio.volume = previousVolume;
   }
 }
 
@@ -132,6 +147,7 @@ export function attachRealtimeDataChannelHandler(
   dataChannel: RTCDataChannel,
   tutorAudio: HTMLAudioElement,
   onError: (message: string) => void,
+  phraseHandlers: PracticePhraseHandlers = {},
 ): () => void {
   const handledCallIds = new Set<string>();
 
@@ -149,6 +165,7 @@ export function attachRealtimeDataChannelHandler(
           call.arguments,
           handledCallIds,
           onError,
+          phraseHandlers,
         );
       }
     } catch {

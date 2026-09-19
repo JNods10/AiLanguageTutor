@@ -7,10 +7,11 @@ from services.openai_realtime import build_session_config
 
 
 def test_append_native_practice_tts_forbids_target_language_on_stream():
-    base = build_tutor_instructions()
+    base = build_tutor_instructions(native_practice_audio=True)
     prompt = append_native_practice_tts_instructions(base, "Dutch", "English")
 
     assert "Do not speak Dutch on the Realtime audio output" in prompt
+    assert "Never tell the student you cannot speak Dutch" in prompt
     assert SPEAK_PRACTICE_PHRASE in prompt
 
 
