@@ -26,16 +26,23 @@ export async function fetchPracticePhraseAudio(text: string): Promise<Blob> {
   return response.blob();
 }
 
+let activeClip: HTMLAudioElement | null = null;
+
 export async function playPracticePhrase(
   phrase: string,
   tutorAudio: HTMLAudioElement,
 ): Promise<void> {
+  if (activeClip) {
+    activeClip.pause();
+    activeClip = null;
+  }
+
+  tutorAudio.volume = 0;
+
   const blob = await fetchPracticePhraseAudio(phrase);
   const url = URL.createObjectURL(blob);
   const clip = new Audio(url);
-
-  const previousVolume = tutorAudio.volume;
-  tutorAudio.volume = 0;
+  activeClip = clip;
 
   try {
     await clip.play();
@@ -44,7 +51,9 @@ export async function playPracticePhrase(
       clip.onerror = () => reject(new Error("Could not play practice phrase audio."));
     });
   } finally {
-    tutorAudio.volume = previousVolume;
+    if (activeClip === clip) {
+      activeClip = null;
+    }
     URL.revokeObjectURL(url);
   }
 }
