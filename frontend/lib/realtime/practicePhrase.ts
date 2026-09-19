@@ -35,7 +35,7 @@ export async function playPracticePhrase(
   const clip = new Audio(url);
 
   const previousVolume = tutorAudio.volume;
-  tutorAudio.volume = 0.2;
+  tutorAudio.volume = 0;
 
   try {
     await clip.play();

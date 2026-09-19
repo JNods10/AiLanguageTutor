@@ -64,6 +64,8 @@ export type RealtimeConnection = {
 
 type ConnectOptions = {
   onToolError?: (message: string) => void;
+  onPracticePhraseStart?: (phrase: string) => void;
+  onPracticePhraseEnd?: (phrase: string) => void;
 };
 
 export async function connectRealtimeVoice(
@@ -121,6 +123,10 @@ export async function connectRealtimeVoice(
     dataChannel,
     audioElement,
     (message) => options.onToolError?.(message),
+    {
+      onPracticePhraseStart: options.onPracticePhraseStart,
+      onPracticePhraseEnd: options.onPracticePhraseEnd,
+    },
   );
 
   return {
