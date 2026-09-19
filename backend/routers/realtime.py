@@ -2,7 +2,8 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from config import settings
-from prompts.tutor import build_tutor_instructions
+from prompts.hybrid_audio import append_native_practice_tts_instructions
+from prompts.tutor import build_tutor_instructions, language_name
 from schemas.realtime import CreateSessionRequest, CreateSessionResponse
 from services.openai_realtime import create_realtime_client_secret
 
@@ -19,6 +20,20 @@ async def create_session(request: CreateSessionRequest) -> CreateSessionResponse
 
     tutor_params = request.to_tutor_params()
     instructions = build_tutor_instructions(tutor_params)
+    native_practice_tts = settings.elevenlabs_configured
+
+    if native_practice_tts:
+        practice = language_name(tutor_params.target_language)
+        explain = language_name(tutor_params.explanation_language)
+        instructions = append_native_practice_tts_instructions(
+            instructions, practice, explain
+        )
+
+    try:
+        data = await create_realtime_client_secret(
+            instructions,
+            native_practice_tts=native_practice_tts,
+        )
 
     try:
         data = await create_realtime_client_secret(instructions, tutor_params)

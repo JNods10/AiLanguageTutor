@@ -46,7 +46,9 @@ export function useRealtimeVoice({
         level,
       });
 
-      const connection = await connectRealtimeVoice(session.clientSecret);
+      const connection = await connectRealtimeVoice(session.clientSecret, {
+        onToolError: (message) => setError(message),
+      });
       connectionRef.current = connection;
 
       connection.peerConnection.onconnectionstatechange = () => {
