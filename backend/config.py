@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = SecretStr("")
     openai_realtime_model: str = "gpt-realtime-2.1-mini"
     openai_realtime_voice: str = "marin"
+    elevenlabs_api_key: SecretStr = SecretStr("")
+    elevenlabs_voice_id: str = ""
+    elevenlabs_tts_model: str = "eleven_flash_v2_5"
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
     @property
@@ -26,6 +29,13 @@ class Settings(BaseSettings):
     @property
     def openai_configured(self) -> bool:
         return bool(self.openai_api_key.get_secret_value().strip())
+
+    @property
+    def elevenlabs_configured(self) -> bool:
+        return bool(
+            self.elevenlabs_api_key.get_secret_value().strip()
+            and self.elevenlabs_voice_id.strip()
+        )
 
 
 settings = Settings()

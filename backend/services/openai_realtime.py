@@ -1,12 +1,17 @@
 import httpx
 
 from config import settings
+from services.realtime_tools import SPEAK_PRACTICE_PHRASE_TOOL
 
 OPENAI_CLIENT_SECRETS_URL = "https://api.openai.com/v1/realtime/client_secrets"
 
 
-def build_session_config(instructions: str) -> dict[str, object]:
-    return {
+def build_session_config(
+    instructions: str,
+    *,
+    native_practice_tts: bool = False,
+) -> dict[str, object]:
+    config: dict[str, object] = {
         "type": "realtime",
         "model": settings.openai_realtime_model,
         "instructions": instructions,
@@ -22,9 +27,24 @@ def build_session_config(instructions: str) -> dict[str, object]:
         },
     }
 
+    if native_practice_tts:
+        config["tools"] = [SPEAK_PRACTICE_PHRASE_TOOL]
+        config["tool_choice"] = "auto"
 
-async def create_realtime_client_secret(instructions: str) -> dict[str, object]:
-    payload = {"session": build_session_config(instructions)}
+    return config
+
+
+async def create_realtime_client_secret(
+    instructions: str,
+    *,
+    native_practice_tts: bool = False,
+) -> dict[str, object]:
+    payload = {
+        "session": build_session_config(
+            instructions,
+            native_practice_tts=native_practice_tts,
+        )
+    }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(

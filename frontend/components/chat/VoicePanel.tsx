@@ -90,8 +90,8 @@ export default function VoicePanel() {
           <h2 className="text-lg font-medium">Voice practice</h2>
           <p className="text-sm leading-relaxed text-text-muted">
             {isConnected
-              ? `Speak naturally in ${language.name}. Your tutor will respond with corrections and follow-up questions.`
-              : `Start a live voice session in ${language.name}. Explanations are provided in English.`}
+              ? `English tutoring with native ${language.name} phrases via ElevenLabs when the tutor models language.`
+              : `Start a live voice session in ${language.name}. Explanations are in English; modeled phrases use native TTS when configured.`}
           </p>
         </div>
 
