@@ -7,6 +7,24 @@ from services.realtime_tools import REALTIME_TUTOR_TOOLS
 OPENAI_CLIENT_SECRETS_URL = "https://api.openai.com/v1/realtime/client_secrets"
 
 
+def build_turn_detection() -> dict[str, object]:
+    mode = settings.openai_realtime_turn_detection.strip().lower()
+    if mode == "semantic_vad":
+        return {
+            "type": "semantic_vad",
+            "eagerness": settings.openai_realtime_vad_eagerness.strip().lower(),
+            "create_response": True,
+        }
+
+    return {
+        "type": "server_vad",
+        "silence_duration_ms": settings.openai_realtime_vad_silence_duration_ms,
+        "prefix_padding_ms": 400,
+        "threshold": 0.5,
+        "create_response": True,
+    }
+
+
 def transcription_language(params: TutorParams) -> str:
     """Beginners speak mostly English; later levels practice more in the target language."""
     if params.level == LanguageLevel.beginner:
@@ -30,11 +48,7 @@ def build_session_config(
         "output_modalities": ["audio"],
         "audio": {
             "input": {
-                "turn_detection": {
-                    "type": "semantic_vad",
-                    # "low" waits longer before the model replies (up to ~8s vs ~4s for default).
-                    "eagerness": "low",
-                },
+                "turn_detection": build_turn_detection(),
                 "transcription": {
                     "model": "gpt-live-transcribe",
                     "language": language,

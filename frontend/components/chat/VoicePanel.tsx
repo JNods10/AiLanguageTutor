@@ -124,6 +124,9 @@ export default function VoicePanel() {
 
             <DutchPhraseCaptions
               languageName={language.name}
+              sourceLanguageCode={language.code}
+              explanationLanguageCode="en"
+              explanationLanguageName="English"
               activePhrase={activePracticePhrase}
               history={practicePhraseHistory}
               visible={showDutchCaptions}

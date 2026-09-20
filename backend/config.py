@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     openai_realtime_model: str = "gpt-realtime-2.1-mini"
     # Override via OPENAI_REALTIME_VOICE in .env if Dutch/pronunciation sounds off.
     openai_realtime_voice: str = "marin"
+    # server_vad: wait for silence before end-of-turn (good for learners pausing mid-thought).
+    # semantic_vad: end turn when model thinks the user finished speaking (eagerness: low|medium|high).
+    openai_realtime_turn_detection: str = "server_vad"
+    openai_realtime_vad_eagerness: str = "low"
+    openai_realtime_vad_silence_duration_ms: int = 1700
     elevenlabs_api_key: SecretStr = SecretStr("")
     elevenlabs_voice_id: str = ""
     elevenlabs_tts_model: str = "eleven_flash_v2_5"

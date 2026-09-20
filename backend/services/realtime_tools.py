@@ -7,7 +7,8 @@ SPEAK_PRACTICE_PHRASE_TOOL: dict[str, object] = {
     "name": SPEAK_PRACTICE_PHRASE,
     "description": (
         "Speak the target practice language with native pronunciation. "
-        "Use for conversational replies: greetings, chat, roleplay, and models. "
+        "Use for normal conversational replies (default)—not mini-lessons. "
+        "Greetings, chat, roleplay, answers to their questions. "
         "Put the full reply in one call (1–4 short sentences). This completes the "
         "spoken turn—do not add English on your Realtime voice after it unless "
         "explain_in_english was called for that turn. Do not call twice with the "
@@ -33,8 +34,9 @@ EXPLAIN_IN_ENGLISH_TOOL: dict[str, object] = {
     "type": "function",
     "name": EXPLAIN_IN_ENGLISH,
     "description": (
-        "Use when the student clearly asked for an English explanation (grammar, "
-        "meaning, how-to, or culture). Call this once at the start of that turn, "
+        "Use when the student explicitly asked to be taught or explained something "
+        "in English (grammar, meaning, how-to, culture, 'teach me', 'what does X mean'). "
+        "Do not use during casual chat. Call once at the start of that turn, "
         "then answer entirely in English on your Realtime voice. Do not use "
         "speak_practice_phrase in the same turn unless they immediately ask to "
         "practice Dutch again."
@@ -55,10 +57,11 @@ SET_CONVERSATION_MODE_TOOL: dict[str, object] = {
     "type": "function",
     "name": SET_CONVERSATION_MODE,
     "description": (
-        "Update tutoring mode when the student changes intent: casual chat, "
-        "structured lesson, or focused English explanations. Call when they ask "
-        "to switch style (e.g. 'let's just chat', 'teach me a lesson', "
-        "'explain in English'). Optional at session start if scenario implies a mode."
+        "Switch tutoring style when the student clearly changes intent. "
+        "Default is free_chat—do not call this every turn. "
+        "Use free_chat for normal conversation; structured_lesson only when they "
+        "ask for a lesson or phrase drill; explain_focus when they want extended "
+        "English explanations. Examples: 'let's just chat', 'teach me a lesson'."
     ),
     "parameters": {
         "type": "object",

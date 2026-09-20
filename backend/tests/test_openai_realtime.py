@@ -7,7 +7,11 @@ from pydantic import SecretStr
 from config import settings
 from main import app
 from schemas.tutor import LanguageLevel, TutorParams
-from services.openai_realtime import build_session_config, transcription_language
+from services.openai_realtime import (
+    build_session_config,
+    build_turn_detection,
+    transcription_language,
+)
 
 
 def test_build_session_config_includes_model_voice_and_vad():
@@ -17,10 +21,7 @@ def test_build_session_config_includes_model_voice_and_vad():
     assert config["model"] == settings.openai_realtime_model
     assert config["instructions"] == "You are a tutor."
     assert config["output_modalities"] == ["audio"]
-    assert config["audio"]["input"]["turn_detection"] == {
-        "type": "semantic_vad",
-        "eagerness": "low",
-    }
+    assert config["audio"]["input"]["turn_detection"] == build_turn_detection()
     assert config["audio"]["output"]["voice"] == settings.openai_realtime_voice
 
 
