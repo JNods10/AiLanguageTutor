@@ -41,18 +41,18 @@ def test_scenario_omitted_when_not_set():
     assert "Scenario:" not in prompt
 
 
-def test_beginner_scenario_includes_structured_lesson_hint():
+def test_beginner_scenario_keeps_conversation_default():
     params = TutorParams(level=LanguageLevel.beginner, scenario="ordering coffee")
     prompt = build_tutor_instructions(params)
 
-    assert "structured lesson" in prompt.lower()
+    assert "unless they ask for a structured lesson" in prompt.lower()
 
 
 def test_level_guidance_varies_by_level():
     beginner = build_tutor_instructions(TutorParams(level=LanguageLevel.beginner))
     advanced = build_tutor_instructions(TutorParams(level=LanguageLevel.advanced))
 
-    assert "check understanding" in beginner.lower()
+    assert "unless they ask you to teach" in beginner.lower()
     assert "native-like speech" in advanced.lower()
 
 
@@ -95,14 +95,14 @@ def test_beginner_corrects_rarely():
     assert "correct rarely" in prompt.lower()
 
 
-def test_teaching_adapts_to_student():
-    beginner = build_tutor_instructions(TutorParams(level=LanguageLevel.beginner))
-    intermediate = build_tutor_instructions(
-        TutorParams(level=LanguageLevel.intermediate)
-    )
+def test_conversation_first_not_unsolicited_teaching():
+    native = build_tutor_instructions(native_practice_audio=True)
+    stream = build_tutor_instructions()
 
-    assert "follow the student's lead" in beginner.lower() or "adapt to the student" in beginner.lower()
-    assert "adapt to the student" in intermediate.lower()
+    assert "Do not teach unsolicited" in native
+    assert "Teach only when" in native
+    assert "Conversation first" in stream
+    assert "explicitly asks" in native.lower()
 
 
 def test_native_practice_audio_routes_through_tools():

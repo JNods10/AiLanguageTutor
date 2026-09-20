@@ -14,7 +14,7 @@ LANGUAGE_NAMES: dict[str, str] = {
 LEVEL_GUIDANCE: dict[LanguageLevel, str] = {
     LanguageLevel.beginner: (
         "Simple vocabulary, short sentences, slow pace. "
-        "Check understanding in English when needed."
+        "Stay in conversation unless they ask you to teach."
     ),
     LanguageLevel.intermediate: (
         "Everyday vocabulary, follow-up questions, mostly target-language dialogue."
@@ -36,7 +36,7 @@ def _scenario_block(scenario: str | None, level: LanguageLevel) -> str:
     extra = ""
     if level == LanguageLevel.beginner:
         extra = (
-            " Beginner: short structured lesson, then brief roleplay, then debrief."
+            " Treat as roleplay/conversation unless they ask for a structured lesson."
         )
     return f"\nScenario: {scenario.strip()}.{extra}\n"
 
@@ -49,7 +49,8 @@ def _corrections_block(
     native_practice_audio: bool = False,
 ) -> str:
     base = """Corrections: prioritize meaning over perfection. Never comment on accent.
-If understood, affirm and continue. Prefer recasting over lectures."""
+If understood, affirm and continue. Prefer recasting over lectures.
+After a correction, resume normal conversation—no extra vocabulary, drills, or lessons in that turn."""
     if native_practice_audio:
         native = f"""{base}
 Correct in spoken {practice} via speak_practice_phrase (recast naturally). Do not add a separate {explain} recap after {practice}.
@@ -106,6 +107,25 @@ No {explain} on stream on the first turn."""
 No {explain} on stream unless they ask for an explanation."""
 
 
+def _conversation_mode_block(
+    practice: str, explain: str, *, native_practice_audio: bool = False
+) -> str:
+    chat_line = (
+        f"Reply with speak_practice_phrase only—natural chat, no teaching."
+        if native_practice_audio
+        else f"Reply in {practice} like a normal conversation—no teaching."
+    )
+    return f"""Conversation first (default: free_chat):
+- Your default is simple {practice} conversation: react, follow up, stay natural. {chat_line}
+- Do not teach unsolicited grammar, word lists, "today let's learn…", or mini-lessons during chat.
+
+Teach only when:
+1. The student explicitly asks (meaning, grammar, "teach me", "help me learn", "how do I say…", or a lesson)—use explain_in_english for {explain} teaching and/or set_conversation_mode to structured_lesson.
+2. You correct them—brief recast in {practice}, then continue the conversation as usual. Do not turn a correction into a lesson.
+
+If unsure whether they want a lesson, keep chatting in {practice} and ask one short question—not a lecture."""
+
+
 def build_tutor_instructions(
     params: TutorParams | None = None,
     *,
@@ -120,28 +140,25 @@ def build_tutor_instructions(
         level, practice, explain, native_practice_audio=native_practice_audio
     )
 
+    conversation_mode = _conversation_mode_block(
+        practice, explain, native_practice_audio=native_practice_audio
+    )
+
     if native_practice_audio:
         audio = _native_audio_block(practice, explain, level)
         opening = _opening_native(practice, explain, level)
-        teaching = f"""Teaching: follow the student's lead—chat, roleplay, or explain as they ask.
-Use structured teach → model → try only in structured_lesson mode or when they ask to learn phrases.
-Be warm and concise; avoid repeating the same {practice} line across turns.
-When chatting in {practice}, stop after speak_practice_phrase—wait for the student; do not narrate in {explain}."""
     else:
         audio = _stream_audio_block(practice, explain, level)
         opening = ""
-        teaching = f"""Teaching: adapt to the student—Q&A, chat, or phrase practice when they want it.
-When teaching new language: one idea per turn, end with one clear question when appropriate."""
 
-    return f"""You are a friendly, patient voice tutor helping a student learn {practice}.
-Goal: build confidence, teach in small steps, keep conversation natural.
+    return f"""You are a friendly conversation partner helping a student practice {practice}.
+You can teach when they ask; otherwise prioritize natural dialogue over instruction.
 
 Level: {level.value}. {LEVEL_GUIDANCE[level]}
 {scenario}
+{conversation_mode}
 {audio}
 {opening}
-
-{teaching}
 
 {corrections}
 
