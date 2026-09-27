@@ -4,12 +4,12 @@ import { createContext, useCallback, useContext } from "react";
 
 import { STORAGE_KEYS } from "@/lib/constants/app";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
+import type { CefrLevel } from "@/lib/levels";
 import { DEFAULT_LEVEL, getLevelById } from "@/lib/levels";
-import type { LanguageLevel } from "@/lib/realtime/types";
 
 type LevelContextValue = {
-  level: LanguageLevel;
-  setLevel: (level: LanguageLevel) => void;
+  level: CefrLevel;
+  setLevel: (level: CefrLevel) => void;
   levelInfo: ReturnType<typeof getLevelById>;
 };
 
@@ -25,7 +25,7 @@ export function LevelProvider({ children }: { children: React.ReactNode }) {
   const level = levelInfo.id;
 
   const setLevel = useCallback(
-    (next: LanguageLevel) => {
+    (next: CefrLevel) => {
       setStoredLevel(getLevelById(next).id);
     },
     [setStoredLevel],

@@ -1,4 +1,7 @@
-export type LanguageLevel = "beginner" | "intermediate" | "advanced";
+import type { OpenAiPracticeLevel } from "@/lib/levels";
+
+/** OpenAI Realtime session level (legacy three-band scale). */
+export type LanguageLevel = OpenAiPracticeLevel;
 
 export type SessionParams = {
   targetLanguage: string;

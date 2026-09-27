@@ -9,19 +9,22 @@ import {
   createRealtimeSession,
   type RealtimeConnection,
 } from "@/lib/realtime/connect";
-import type { LanguageLevel, VoiceConnectionStatus } from "@/lib/realtime/types";
+import type { CefrLevel } from "@/lib/levels";
+import { cefrToOpenAiLevel } from "@/lib/levels";
+import type { VoiceConnectionStatus } from "@/lib/realtime/types";
 
 type UseRealtimeVoiceOptions = {
   targetLanguage: string;
   explanationLanguage?: string;
-  level?: LanguageLevel;
+  level?: CefrLevel;
 };
 
 export function useRealtimeVoice({
   targetLanguage,
   explanationLanguage = "en",
-  level = "beginner",
+  level = "A1",
 }: UseRealtimeVoiceOptions) {
+  const openAiLevel = cefrToOpenAiLevel(level);
   const [status, setStatus] = useState<VoiceConnectionStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [activePracticePhrase, setActivePracticePhrase] = useState<string | null>(
@@ -62,7 +65,7 @@ export function useRealtimeVoice({
       const session = await createRealtimeSession({
         targetLanguage,
         explanationLanguage,
-        level,
+        level: openAiLevel,
       });
 
       const connection = await connectRealtimeVoice(session.clientSecret, {
@@ -110,7 +113,7 @@ export function useRealtimeVoice({
   }, [
     targetLanguage,
     explanationLanguage,
-    level,
+    openAiLevel,
     resetPracticePhrases,
   ]);
 

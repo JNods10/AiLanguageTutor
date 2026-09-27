@@ -35,7 +35,7 @@ export default function LanguageSidebar() {
         <SectionLabel className="mb-3 mt-8 px-1">Practice level</SectionLabel>
         <p className="mb-2 px-1 text-xs leading-relaxed text-text-muted">
           Controls how much Dutch the tutor uses and how complex the
-          conversation is. Applies when you start a new voice session.
+          CEFR level (A1–C1). Applies when you start a new voice session.
         </p>
         <nav className="flex flex-col gap-1" aria-label="Practice level">
           {PRACTICE_LEVELS.map((item) => (
