@@ -1,0 +1,19 @@
+---
+description: Branch from main and open PRs against main only
+alwaysApply: true
+---
+
+# Git — branch from `main`, merge to `main`
+
+Before creating or editing project files for a feature:
+
+1. Run `git branch --show-current`. If on `main`, create `feat/...` from latest `origin/main` first.
+2. Start features with: `git fetch origin && git checkout main && git pull origin main && git checkout -b feat/name`.
+
+Pull requests:
+
+- **Base branch is always `main`.** Never target stale integration branches unless the user explicitly asks.
+- Create PRs with `gh pr create --base main ...` and confirm the GitHub UI shows `base: main`.
+- If conflicts appear, check whether the PR base was set incorrectly before resolving file conflicts.
+
+See [CLAUDE.md](../../CLAUDE.md) and [docs/dev-workflow.md](../../docs/dev-workflow.md).

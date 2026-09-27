@@ -54,6 +54,18 @@ Remove when done: `git worktree remove ../AiLanguageTutor-frontend`
 1. Confirm the branch contains only the intended scope (frontend **or** backend, not both unless intentional).
 2. Rebase or merge latest `main` if it has moved.
 3. Run relevant tests/build (`pytest` for backend, `npm run build` for frontend).
+4. **Base branch must be `main`.** When creating the PR, verify GitHub shows `base: main` (not another feature branch). From the CLI:
+
+```bash
+git fetch origin
+git checkout main && git pull origin main
+git checkout -b feat/your-feature-name
+# ... commits ...
+git push -u origin HEAD
+gh pr create --base main --title "..." --body "..."
+```
+
+If GitHub defaults to a non-`main` base, use **Edit** on the PR to change the base to `main` before merging.
 
 ## Running locally (single checkout)
 
