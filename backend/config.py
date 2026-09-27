@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Override via OPENAI_REALTIME_VOICE in .env if Dutch/pronunciation sounds off.
     openai_realtime_voice: str = "marin"
     elevenlabs_api_key: SecretStr = SecretStr("")
+    elevenlabs_agent_id: str = ""
     elevenlabs_voice_id: str = ""
     elevenlabs_tts_model: str = "eleven_flash_v2_5"
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
@@ -36,6 +37,13 @@ class Settings(BaseSettings):
         return bool(
             self.elevenlabs_api_key.get_secret_value().strip()
             and self.elevenlabs_voice_id.strip()
+        )
+
+    @property
+    def elevenlabs_agent_configured(self) -> bool:
+        return bool(
+            self.elevenlabs_api_key.get_secret_value().strip()
+            and self.elevenlabs_agent_id.strip()
         )
 
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import health, realtime, tts
+from routers import elevenlabs_agent, health, realtime, tts
 
 app = FastAPI()
 
@@ -15,4 +15,5 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(realtime.router)
+app.include_router(elevenlabs_agent.router)
 app.include_router(tts.router)
